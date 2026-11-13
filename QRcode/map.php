@@ -752,6 +752,120 @@
       border: 1px solid #d6b2b5;
     }
 
+    /* In-Floor Navigation Bar */
+    .floor-nav-bar {
+      display: none;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 8px;
+      padding: 9px 10px;
+      border-radius: 11px;
+      background: #eff6ff;
+      border: 1.5px solid #bfdbfe;
+    }
+
+    .floor-nav-bar.show {
+      display: flex;
+    }
+
+    .floor-nav-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr auto;
+      gap: 6px;
+      align-items: end;
+    }
+
+    .floor-nav-field {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+
+    .floor-nav-field label {
+      font-size: 0.67rem;
+      font-weight: 800;
+      color: #1e3a8a;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .floor-nav-select {
+      width: 100%;
+      padding: 6px 8px;
+      border-radius: 8px;
+      border: 1px solid #93c5fd;
+      background: #ffffff;
+      color: var(--text-main);
+      font-size: 0.75rem;
+      font-weight: 700;
+      font-family: inherit;
+      outline: none;
+    }
+
+    .floor-nav-select:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 2px rgba(29, 78, 216, 0.16);
+    }
+
+    .floor-nav-swap {
+      padding: 6px 9px;
+      border-radius: 8px;
+      border: 1px solid #93c5fd;
+      background: #ffffff;
+      color: #1e3a8a;
+      font-size: 0.82rem;
+      font-weight: 800;
+      cursor: pointer;
+      height: 31px;
+    }
+
+    .floor-nav-swap:hover {
+      background: #dbeafe;
+    }
+
+    .directions-box {
+      margin-top: 9px;
+      padding: 8px 10px;
+      border-radius: 9px;
+      background: rgba(255, 255, 255, 0.88);
+      border: 1px solid #fcd34d;
+    }
+
+    .directions-title {
+      font-size: 0.72rem;
+      font-weight: 800;
+      color: #1e3a8a;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .directions-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .directions-list li {
+      font-size: 0.74rem;
+      color: #334155;
+      line-height: 1.35;
+      font-weight: 600;
+    }
+
+    @media (max-width: 480px) {
+      .floor-nav-row {
+        grid-template-columns: 1fr 1fr;
+      }
+      .floor-nav-swap {
+        grid-column: 1 / -1;
+        width: 100%;
+      }
+    }
+
     /* Directory / Room List */
     .directory-section {
       padding: 10px 14px 20px;
@@ -984,6 +1098,20 @@
         <button type="button" class="landmark-chip" data-spot="faculty">Faculty Bldg</button>
       </div>
 
+      <div class="floor-nav-bar" id="floorNavBar">
+        <div class="floor-nav-row">
+          <div class="floor-nav-field">
+            <label for="floorFromSelect">📍 Starting From</label>
+            <select id="floorFromSelect" class="floor-nav-select"></select>
+          </div>
+          <div class="floor-nav-field">
+            <label for="floorToSelect">🏁 Navigate To</label>
+            <select id="floorToSelect" class="floor-nav-select"></select>
+          </div>
+          <button type="button" class="floor-nav-swap" id="floorSwapBtn" title="Swap From &amp; To">⇄</button>
+        </div>
+      </div>
+
       <div class="map-header-bar">
         <div>
           <div class="map-title" id="mapTitle">School Vicinity Map</div>
@@ -1053,6 +1181,7 @@
             src: "assets/floor-main-1f.jpg",
             viewBox: "0 0 1024 617",
             aspect: "1024 / 617",
+            nav: { entry: { x: 520, y: 540, label: "Main 1F Entrance / Stairs" }, corridorY: 540, hallBX: 882 },
             rooms: [
               { number: "MB 101", name: "Classroom MB 101", location: "Main Building • 1st Floor • South Hallway", box: { x: 650, y: 468, w: 54, h: 56 } },
               { number: "MB 102", name: "Classroom MB 102", location: "Main Building • 1st Floor • South Hallway", box: { x: 708, y: 468, w: 56, h: 56 } },
@@ -1071,6 +1200,7 @@
             type: "svg",
             viewBox: "0 0 1024 560",
             aspect: "1024 / 560",
+            nav: { entry: { x: 94, y: 474, label: "Main 2F Stairs (West)" }, corridorY: 474, hallBX: 847, upperX: 345, upperY: 342 },
             rooms: [
               { number: "ADMISSION", name: "Admission Office", location: "Main Building • 2nd Floor • West Wing (Upper Hall A)", box: { x: 48, y: 245, w: 92, h: 80 } },
               { number: "CONF", name: "Conference Room", location: "Main Building • 2nd Floor • West Wing (Upper Hall A)", box: { x: 145, y: 245, w: 92, h: 80 } },
@@ -1097,6 +1227,7 @@
             src: "assets/floor-main-3f.jpg",
             viewBox: "0 0 1024 566",
             aspect: "1024 / 566",
+            nav: { entry: { x: 358, y: 484, label: "Main 3F Stairs (West)" }, corridorY: 484, hallBX: 902 },
             rooms: [
               { number: "LIB-UG", name: "Library (Undergraduate Prog.)", location: "Main Building • 3rd Floor • West Wing (Upper)", box: { x: 378, y: 345, w: 62, h: 56 } },
               { number: "LIB-GR", name: "Library (Graduate Prog.)", location: "Main Building • 3rd Floor • West Wing", box: { x: 378, y: 412, w: 62, h: 54 } },
@@ -1137,6 +1268,7 @@
             src: "assets/floor-annex-1f.jpg",
             viewBox: "0 0 1024 657",
             aspect: "1024 / 657",
+            nav: { entry: { x: 52, y: 162, label: "Annex 1F Entrance / Stairs" }, corridorY: 162, courtyardX: 620 },
             rooms: [
               { number: "T&B A1F", name: "Comfort Room (T&B)", location: "Annex Building • 1st Floor • West End", box: { x: 22, y: 30, w: 62, h: 112 } },
               { number: "OSA", name: "Office of Student Affairs (OSA)", location: "Annex Building • 1st Floor • West Wing", box: { x: 86, y: 30, w: 44, h: 112 } },
@@ -1154,6 +1286,7 @@
             type: "svg",
             viewBox: "0 0 1024 560",
             aspect: "1024 / 560",
+            nav: { entry: { x: 59, y: 339, label: "Annex 2F Stairs (West)" }, corridorY: 339 },
             rooms: [
               { number: "T&B A2F", name: "Comfort Room (T&B)", location: "Annex Building • 2nd Floor • West End (Near Stairs)", box: { x: 86, y: 170, w: 72, h: 145 } },
               { number: "ANNEX 201", name: "Classroom Annex 201", location: "Annex Building • 2nd Floor • West Wing", box: { x: 164, y: 170, w: 142, h: 145 } },
@@ -1170,6 +1303,7 @@
             src: "assets/floor-annex-3f.jpg",
             viewBox: "0 0 1024 711",
             aspect: "1024 / 711",
+            nav: { entry: { x: 55, y: 468, label: "Annex 3F Stairs (West)" }, corridorY: 468, eastX: 880 },
             rooms: [
               { number: "T&B A3F", name: "Comfort Room (T&B)", location: "Annex Building • 3rd Floor • West End (Near Stairs)", box: { x: 32, y: 492, w: 78, h: 90 } },
               { number: "ANNEX 301", name: "Classroom Annex 301", location: "Annex Building • 3rd Floor • West Wing", box: { x: 112, y: 492, w: 110, h: 90 } },
@@ -1205,6 +1339,8 @@
       building: null,         // "main" | "annex" | null
       floor: null,            // "1f" | "2f" | "3f" | null
       roomNumber: null,       // selected room number
+      floorStartRoom: "__entry__", // "__entry__" or room number on current floor
+      showFloorRoute: true,
       showRouteOnVicinity: false,
       userPos: { x: 458, y: 618, label: "Main Entrance", source: "default" },
       pickSpotMode: false,
@@ -1222,6 +1358,11 @@
     const mapTitle = document.getElementById("mapTitle");
     const mapSubtitle = document.getElementById("mapSubtitle");
     const floorRow = document.getElementById("floorRow");
+    const locationBar = document.getElementById("locationBar");
+    const floorNavBar = document.getElementById("floorNavBar");
+    const floorFromSelect = document.getElementById("floorFromSelect");
+    const floorToSelect = document.getElementById("floorToSelect");
+    const floorSwapBtn = document.getElementById("floorSwapBtn");
     const selectedCard = document.getElementById("selectedCard");
     const selectedBadge = document.getElementById("selectedBadge");
     const selectedTitle = document.getElementById("selectedTitle");
@@ -1324,6 +1465,130 @@
       } else {
         floorRow.classList.remove("show");
       }
+
+      if (state.view === "vicinity") {
+        locationBar.style.display = "flex";
+        floorNavBar.classList.remove("show");
+      } else {
+        locationBar.style.display = "none";
+        landmarkPicker.classList.remove("show");
+        floorNavBar.classList.add("show");
+        renderFloorNavBar();
+      }
+    }
+
+    function renderFloorNavBar() {
+      if (!state.building || !state.floor) return;
+      const floorData = BUILDINGS[state.building].floors[state.floor];
+      const entryLabel = floorData.nav ? floorData.nav.entry.label : "Stairs / Entrance";
+      const fromOpts = [
+        `<option value="__entry__">${entryLabel}</option>`,
+        ...floorData.rooms.map((rm) => `<option value="${rm.number}">${rm.number} — ${rm.name}</option>`)
+      ].join("");
+      const toOpts = [
+        `<option value="">Choose destination room...</option>`,
+        ...floorData.rooms.map((rm) => `<option value="${rm.number}">${rm.number} — ${rm.name}</option>`)
+      ].join("");
+
+      floorFromSelect.innerHTML = fromOpts;
+      floorToSelect.innerHTML = toOpts;
+      floorFromSelect.value = floorData.rooms.some((r) => r.number === state.floorStartRoom)
+        ? state.floorStartRoom
+        : "__entry__";
+      floorToSelect.value = state.roomNumber || "";
+    }
+
+    function getFloorPointOnSpine(bldgId, floorId, nav, pt) {
+      if (bldgId === "main" && floorId === "1f" && pt.x > 880 && pt.y < 430) {
+        return [{ x: nav.hallBX, y: pt.y }, { x: nav.hallBX, y: nav.corridorY }];
+      }
+      if (bldgId === "main" && floorId === "2f") {
+        if (pt.x > 840 && pt.y < 360) {
+          return [{ x: nav.hallBX, y: pt.y }, { x: nav.hallBX, y: nav.corridorY }];
+        }
+        if (pt.x < 400 && pt.y < 340) {
+          return [{ x: pt.x, y: nav.upperY }, { x: nav.upperX, y: nav.upperY }, { x: nav.upperX, y: nav.corridorY }];
+        }
+      }
+      if (bldgId === "main" && floorId === "3f" && pt.x > 900) {
+        return [{ x: nav.hallBX, y: pt.y }, { x: nav.hallBX, y: nav.corridorY }];
+      }
+      if (bldgId === "annex" && floorId === "1f" && pt.x > 640 && pt.y > 300) {
+        return [{ x: nav.courtyardX, y: pt.y }, { x: nav.courtyardX, y: nav.corridorY }];
+      }
+      if (bldgId === "annex" && floorId === "3f" && pt.x > 900) {
+        return [{ x: nav.eastX, y: pt.y }, { x: nav.eastX, y: nav.corridorY }];
+      }
+      return [{ x: pt.x, y: nav.corridorY }];
+    }
+
+    function buildFloorRoute(bldgId, floorId, startRoomNum, targetRoom) {
+      const floorData = BUILDINGS[bldgId].floors[floorId];
+      const nav = floorData.nav;
+      const startRoom = startRoomNum !== "__entry__"
+        ? floorData.rooms.find((r) => r.number === startRoomNum)
+        : null;
+
+      const startPt = startRoom
+        ? { x: Math.round(startRoom.box.x + startRoom.box.w / 2), y: Math.round(startRoom.box.y + startRoom.box.h / 2) }
+        : { x: nav.entry.x, y: nav.entry.y };
+      const startLabel = startRoom ? `${startRoom.number} (${startRoom.name})` : nav.entry.label;
+
+      if (!targetRoom) {
+        return { startPt, startLabel, points: [], steps: [] };
+      }
+
+      const endPt = {
+        x: Math.round(targetRoom.box.x + targetRoom.box.w / 2),
+        y: Math.round(targetRoom.box.y + targetRoom.box.h / 2)
+      };
+
+      const startSpine = getFloorPointOnSpine(bldgId, floorId, nav, startPt);
+      const endSpine = getFloorPointOnSpine(bldgId, floorId, nav, endPt);
+      const sJoin = startSpine[startSpine.length - 1];
+      const eJoin = endSpine[endSpine.length - 1];
+
+      const rawPts = [startPt, ...startSpine, ...endSpine.slice().reverse(), endPt];
+      const points = rawPts.filter((p, idx) => idx === 0 || p.x !== rawPts[idx - 1].x || p.y !== rawPts[idx - 1].y);
+
+      const steps = [`1. Start at ${startLabel}.`];
+      let stepNo = 2;
+      if (startRoom && startSpine.length > 1) {
+        steps.push(`${stepNo++}. Exit into the hallway toward the main corridor.`);
+      }
+      const dx = eJoin.x - sJoin.x;
+      if (Math.abs(dx) > 30) {
+        steps.push(`${stepNo++}. Walk ${dx > 0 ? "east (right)" : "west (left)"} along the main corridor.`);
+      }
+      if (bldgId === "main" && floorId === "2f" && endPt.x < 400 && endPt.y < 340) {
+        steps.push(`${stepNo++}. Turn into the Upper Hall A office wing.`);
+      } else if (endSpine.length > 1) {
+        const wingLabel = bldgId === "main" ? "Hall B wing" : (floorId === "1f" ? "ground courtyard" : "east side");
+        steps.push(`${stepNo++}. Turn toward the ${wingLabel} and follow the walkway.`);
+      }
+      steps.push(`${stepNo}. Arrive at ${targetRoom.number} — ${targetRoom.name}.`);
+
+      return { startPt, startLabel, points, steps };
+    }
+
+    function buildVicinityDirections(bldgId) {
+      const bldg = BUILDINGS[bldgId];
+      const u = state.userPos;
+      const p = bldg.pin;
+      const dx = p.x - u.x;
+      const dy = p.y - u.y;
+      const steps = [`1. Start near ${u.label}.`];
+      let n = 2;
+      if (u.y > 530) {
+        steps.push(`${n++}. Walk north into the campus walkway near the Quadrangle.`);
+      }
+      if (Math.abs(dx) > 35) {
+        steps.push(`${n++}. Head ${dx > 0 ? "east (right)" : "west (left)"} toward ${bldg.name}.`);
+      } else if (Math.abs(dy) > 35) {
+        steps.push(`${n++}. Walk ${dy > 0 ? "south" : "north"} toward ${bldg.name}.`);
+      }
+      steps.push(`${n}. Enter ${bldg.name} and tap "View Floors & Rooms →" for indoor directions.`);
+      return steps;
     }
 
     function renderSvgFloorBlueprint(bldgId, floorId, floorData) {
@@ -1631,7 +1896,29 @@
         }
 
         mapTitle.textContent = `${bldg.name} — ${floorData.label}`;
-        mapSubtitle.textContent = "Tap any room on the floor plan or list below to highlight it";
+        mapSubtitle.textContent = "Tap any room or use Starting From / Navigate To above for indoor directions";
+
+        const targetRm = state.roomNumber
+          ? floorData.rooms.find((r) => r.number === state.roomNumber)
+          : null;
+        const routeInfo = buildFloorRoute(state.building, state.floor, state.floorStartRoom, targetRm);
+
+        let floorRouteHtml = "";
+        if (state.showFloorRoute && routeInfo.points.length > 1) {
+          const pts = routeInfo.points.map((p) => `${p.x},${p.y}`).join(" ");
+          floorRouteHtml = `<polyline class="route-line" points="${pts}"/>`;
+        }
+
+        const sp = routeInfo.startPt;
+        const startLabelShort = state.floorStartRoom === "__entry__" ? "STAIRS / IN" : state.floorStartRoom;
+        const startMarkerHtml = `
+          <g style="pointer-events:none;">
+            <circle class="user-pulse" cx="${sp.x}" cy="${sp.y}" r="12" fill="#2563eb" opacity="0.35"/>
+            <circle cx="${sp.x}" cy="${sp.y}" r="8" fill="#2563eb" stroke="#ffffff" stroke-width="2.5"/>
+            <rect x="${sp.x - 32}" y="${sp.y - 28}" width="64" height="16" rx="8" fill="#1e3a8a" stroke="#ffffff" stroke-width="1.4"/>
+            <text x="${sp.x}" y="${sp.y - 17}" text-anchor="middle" font-size="8.5" font-weight="800" fill="#ffffff">${startLabelShort}</text>
+          </g>
+        `;
 
         const roomsHtml = floorData.rooms.map((rm) => {
           const isSel = state.roomNumber === rm.number;
@@ -1647,7 +1934,7 @@
           `;
         }).join("");
 
-        mapOverlay.innerHTML = roomsHtml;
+        mapOverlay.innerHTML = roomsHtml + floorRouteHtml + startMarkerHtml;
         mapOverlay.querySelectorAll("[data-room-click]").forEach((el) => {
           el.addEventListener("click", (e) => {
             e.stopPropagation();
@@ -1660,13 +1947,20 @@
     function renderSelectedCard() {
       if (state.view === "vicinity" && state.building) {
         const bldg = BUILDINGS[state.building];
+        const steps = state.showRouteOnVicinity ? buildVicinityDirections(state.building) : [];
         selectedCard.classList.add("show");
         selectedBadge.textContent = "SELECTED BUILDING";
         selectedTitle.textContent = bldg.name;
         selectedLocation.textContent = bldg.subtitle;
         selectedActions.innerHTML = `
           <button type="button" class="action-btn action-btn-primary" id="openFloorsBtn">View Floors &amp; Rooms →</button>
-          <button type="button" class="action-btn action-btn-secondary" id="toggleRouteBtn">${state.showRouteOnVicinity ? "Hide Route" : "Show Walk Route from Gate"}</button>
+          <button type="button" class="action-btn action-btn-secondary" id="toggleRouteBtn">${state.showRouteOnVicinity ? "Hide Route" : "Show Walk Route"}</button>
+          ${steps.length ? `
+            <div class="directions-box" style="width:100%;">
+              <div class="directions-title">🧭 Walking Directions</div>
+              <ul class="directions-list">${steps.map((s) => `<li>${s}</li>`).join("")}</ul>
+            </div>
+          ` : ""}
         `;
         document.getElementById("openFloorsBtn").addEventListener("click", () => {
           selectFloor("1f");
@@ -1683,19 +1977,30 @@
         const floorData = BUILDINGS[state.building].floors[state.floor];
         const rm = floorData.rooms.find((r) => r.number === state.roomNumber);
         if (rm) {
+          const routeInfo = buildFloorRoute(state.building, state.floor, state.floorStartRoom, rm);
           selectedCard.classList.add("show");
           selectedBadge.textContent = rm.number;
           selectedTitle.textContent = rm.name;
           selectedLocation.textContent = rm.location;
           selectedActions.innerHTML = `
-            <button type="button" class="action-btn action-btn-primary" id="walkFromGateBtn">🗺️ Walk Here from Main Gate</button>
-            <button type="button" class="action-btn action-btn-secondary" id="resetRoomZoomBtn">Reset Floor Zoom</button>
+            <button type="button" class="action-btn action-btn-primary" id="walkFromGateBtn">🗺️ Walk to Building from Gate</button>
+            <button type="button" class="action-btn action-btn-secondary" id="toggleFloorRouteBtn">${state.showFloorRoute ? "Hide Floor Route" : "Show Floor Route"}</button>
+            <button type="button" class="action-btn action-btn-secondary" id="resetRoomZoomBtn">Reset Zoom</button>
+            <div class="directions-box" style="width:100%;">
+              <div class="directions-title">🧭 Floor Navigation Steps</div>
+              <ul class="directions-list">${routeInfo.steps.map((s) => `<li>${s}</li>`).join("")}</ul>
+            </div>
           `;
           document.getElementById("walkFromGateBtn").addEventListener("click", () => {
             state.view = "vicinity";
             state.showRouteOnVicinity = true;
             resetZoom();
             renderAll();
+          });
+          document.getElementById("toggleFloorRouteBtn").addEventListener("click", () => {
+            state.showFloorRoute = !state.showFloorRoute;
+            renderMap();
+            renderSelectedCard();
           });
           document.getElementById("resetRoomZoomBtn").addEventListener("click", () => {
             resetZoom();
@@ -1780,6 +2085,7 @@
     function selectBuilding(bldgId, goToFirstFloor = true) {
       state.building = bldgId;
       state.roomNumber = null;
+      state.floorStartRoom = "__entry__";
       state.showRouteOnVicinity = true;
       if (goToFirstFloor) {
         state.view = "floor";
@@ -1796,12 +2102,14 @@
       state.view = "floor";
       state.floor = floorId;
       state.roomNumber = null;
+      state.floorStartRoom = "__entry__";
       resetZoom();
       renderAll();
     }
 
     function selectRoom(roomNum) {
       state.roomNumber = roomNum;
+      state.showFloorRoute = true;
       const floorData = BUILDINGS[state.building].floors[state.floor];
       const rm = floorData.rooms.find((r) => r.number === roomNum);
       renderAll();
@@ -1810,7 +2118,7 @@
       }
     }
 
-    // Event Listeners: Buttons & Stepper
+    // Event Listeners: Buttons & Floor Navigation
     document.querySelectorAll(".bldg-btn").forEach((btn) => {
       btn.addEventListener("click", () => {
         const key = btn.dataset.bldg;
@@ -1823,6 +2131,33 @@
       btn.addEventListener("click", () => {
         selectFloor(btn.dataset.floor);
       });
+    });
+
+    floorFromSelect.addEventListener("change", () => {
+      state.floorStartRoom = floorFromSelect.value || "__entry__";
+      state.showFloorRoute = true;
+      renderMap();
+      renderSelectedCard();
+    });
+
+    floorToSelect.addEventListener("change", () => {
+      const val = floorToSelect.value;
+      if (!val) {
+        state.roomNumber = null;
+        resetZoom();
+        renderAll();
+      } else {
+        selectRoom(val);
+      }
+    });
+
+    floorSwapBtn.addEventListener("click", () => {
+      if (!state.roomNumber || state.floorStartRoom === "__entry__") return;
+      const prevFrom = state.floorStartRoom;
+      state.floorStartRoom = state.roomNumber;
+      state.roomNumber = prevFrom;
+      state.showFloorRoute = true;
+      renderAll();
     });
 
     // Search Autocomplete
