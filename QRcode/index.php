@@ -1,0 +1,915 @@
+<?php
+// Auto-detect the best LAN/Wi-Fi IPv4 address so phones on the same Wi-Fi/hotspot can scan the QR code directly
+function detectLanIP() {
+    if (!empty($_SERVER['HTTP_HOST']) && $_SERVER['HTTP_HOST'] !== 'localhost' && $_SERVER['HTTP_HOST'] !== '127.0.0.1') {
+        return $_SERVER['HTTP_HOST'];
+    }
+    // Try Windows ipconfig to pick the active Wi-Fi / LAN IPv4 address
+    $output = @shell_exec('ipconfig');
+    if ($output && preg_match_all('/IPv4 Address[.\s]*:\s*([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)/i', $output, $matches)) {
+        foreach ($matches[1] as $ip) {
+            if (strpos($ip, '169.254.') !== 0 && $ip !== '127.0.0.1') {
+                return $ip;
+            }
+        }
+    }
+    $hostIp = @gethostbyname(gethostname());
+    if ($hostIp && $hostIp !== '127.0.0.1' && strpos($hostIp, '169.254.') !== 0) {
+        return $hostIp;
+    }
+    return '192.168.1.16';
+}
+
+$lanIp = detectLanIP();
+$scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+$basePath = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '/QRcode/index.php')), '/');
+$defaultMapUrl = "{$scheme}://{$lanIp}{$basePath}/map.php";
+$defaultImgUrl = "{$scheme}://{$lanIp}{$basePath}/assets/campus-map.png";
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EARIST Cavite Campus — QR Code Navigation System</title>
+  <link rel="icon" type="image/png" href="assets/earist-logo.png?v=2" />
+  <script src="assets/qrcode.min.js"></script>
+  <style>
+    :root {
+      --maroon-dark: #4a0e12;
+      --maroon: #631418;
+      --maroon-light: #7c1d22;
+      --cream-bg: #f4f1ea;
+      --text-dark: #231f20;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+
+    *::-webkit-scrollbar {
+      display: none;
+      width: 0;
+      height: 0;
+    }
+
+    html, body {
+      width: 100%;
+      max-width: 100%;
+      overflow-x: hidden;
+      overflow-y: auto;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: var(--cream-bg);
+      color: var(--text-dark);
+      min-height: 100vh;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Top Banner matching the Poster Header */
+    .top-banner {
+      background: linear-gradient(90deg, var(--maroon-dark) 0%, var(--maroon) 70%, var(--maroon-light) 100%);
+      color: #fff;
+      padding: 16px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.16);
+    }
+
+    .banner-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .banner-logo {
+      width: 58px;
+      height: 58px;
+      border-radius: 50%;
+      border: 2px solid rgba(255, 255, 255, 0.85);
+      object-fit: cover;
+    }
+
+    .banner-school h1 {
+      font-size: 1.7rem;
+      font-weight: 900;
+      letter-spacing: 1.5px;
+      line-height: 1;
+    }
+
+    .banner-school p {
+      font-size: 0.8rem;
+      letter-spacing: 2px;
+      margin-top: 4px;
+      opacity: 0.92;
+    }
+
+    .banner-divider {
+      width: 2px;
+      height: 44px;
+      background: rgba(255, 255, 255, 0.35);
+    }
+
+    .banner-system h2 {
+      font-size: 1.35rem;
+      font-weight: 800;
+      letter-spacing: 1px;
+    }
+
+    .banner-system p {
+      font-size: 0.76rem;
+      letter-spacing: 2.5px;
+      opacity: 0.9;
+      margin-top: 4px;
+    }
+
+    .banner-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .btn-action {
+      background: #fff;
+      color: var(--maroon-dark);
+      border: none;
+      padding: 10px 16px;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
+      transition: transform 0.15s, background 0.15s;
+    }
+
+    .btn-action:hover {
+      background: #f9f2f2;
+      transform: translateY(-1px);
+    }
+
+    .btn-action.outline {
+      background: rgba(255, 255, 255, 0.14);
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.35);
+    }
+
+    .btn-action.outline:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    /* Main Workspace Layout */
+    .workspace {
+      max-width: 1280px;
+      width: 100%;
+      margin: 20px auto;
+      padding: 0 clamp(12px, 3vw, 24px) 40px;
+      display: grid;
+      grid-template-columns: minmax(300px, 380px) minmax(0, 1fr);
+      gap: clamp(18px, 2.5vw, 28px);
+      align-items: start;
+    }
+
+    @media (max-width: 960px) {
+      .workspace {
+        grid-template-columns: minmax(0, 1fr);
+      }
+      .banner-divider {
+        display: none;
+      }
+      .top-banner {
+        padding: 14px 16px;
+      }
+    }
+
+    /* QR CODE AT ENTRANCE Poster Card (Matches Right Column of User's Image) */
+    .qr-poster-column {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      align-items: center;
+      width: 100%;
+      max-width: 420px;
+      margin: 0 auto;
+      min-width: 0;
+    }
+
+    .section-ribbon {
+      width: 100%;
+      background: var(--maroon);
+      color: #fff;
+      font-size: 0.95rem;
+      font-weight: 800;
+      letter-spacing: 0.8px;
+      padding: 9px 18px;
+      border-radius: 6px;
+      text-transform: uppercase;
+      box-shadow: 0 3px 8px rgba(99, 20, 24, 0.22);
+    }
+
+    .qr-standee-card {
+      width: 100%;
+      background: #ffffff;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+      border: 1px solid #e3ded6;
+    }
+
+    .standee-top {
+      background: var(--maroon);
+      color: #fff;
+      padding: 22px 20px 26px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .standee-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .standee-brand img {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      border: 1.5px solid rgba(255, 255, 255, 0.85);
+    }
+
+    .standee-brand-text {
+      text-align: left;
+    }
+
+    .standee-brand-text h3 {
+      font-size: 1.25rem;
+      font-weight: 900;
+      letter-spacing: 1px;
+      line-height: 1;
+    }
+
+    .standee-brand-text span {
+      font-size: 0.68rem;
+      letter-spacing: 1.4px;
+      opacity: 0.9;
+      display: block;
+      margin-top: 2px;
+    }
+
+    .standee-headline {
+      font-size: 1.12rem;
+      font-weight: 800;
+      letter-spacing: 0.8px;
+      line-height: 1.28;
+      margin-bottom: 16px;
+      text-transform: uppercase;
+    }
+
+    /* White QR Frame with Center EARIST Seal */
+    .qr-frame {
+      background: #ffffff;
+      padding: 16px;
+      border-radius: 16px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+    }
+
+    #qrCanvas {
+      width: min(240px, 65vw);
+      height: auto;
+      aspect-ratio: 1 / 1;
+      display: block;
+    }
+
+    /* 4 Steps Below QR Code */
+    .standee-steps {
+      padding: 20px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      background: #fff;
+    }
+
+    .step-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .step-icon-circle {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--maroon);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .step-num-badge {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--maroon-dark);
+      color: #fff;
+      font-size: 0.72rem;
+      font-weight: 800;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .step-text {
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: #2c292a;
+    }
+
+    /* Website Footer Pill */
+    .standee-footer {
+      margin: 0 16px 16px;
+      background: var(--maroon);
+      color: #fff;
+      border-radius: 12px;
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .globe-icon {
+      width: 36px;
+      height: 36px;
+      flex-shrink: 0;
+    }
+
+    .footer-url-box {
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .footer-url-label {
+      font-size: 0.68rem;
+      font-weight: 800;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .footer-url-pill {
+      background: #fff;
+      color: var(--maroon-dark);
+      font-size: 0.74rem;
+      font-weight: 700;
+      padding: 5px 10px;
+      border-radius: 6px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: block;
+      text-decoration: none;
+    }
+
+    /* Right Column: Settings + Phone Mockup + Campus Map Preview */
+    .right-column {
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+      min-width: 0;
+      width: 100%;
+    }
+
+    .config-card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 20px 22px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.07);
+      border: 1px solid #e3ded6;
+    }
+
+    .config-card h3 {
+      font-size: 1rem;
+      font-weight: 800;
+      color: var(--maroon);
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .config-card p {
+      font-size: 0.84rem;
+      color: #555;
+      margin-bottom: 14px;
+      line-height: 1.45;
+    }
+
+    .preset-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .preset-btn {
+      border: 1.5px solid #d8d2c9;
+      background: #faf8f5;
+      color: #333;
+      padding: 7px 12px;
+      border-radius: 8px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .preset-btn.active, .preset-btn:hover {
+      background: var(--maroon);
+      color: #fff;
+      border-color: var(--maroon);
+    }
+
+    .url-input-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      width: 100%;
+    }
+
+    .url-input-group input {
+      flex: 1 1 220px;
+      min-width: 0;
+      padding: 10px 14px;
+      border: 1.5px solid #d4cfc7;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      font-family: monospace;
+      outline: none;
+    }
+
+    .url-input-group input:focus {
+      border-color: var(--maroon);
+    }
+
+    .url-input-group button {
+      background: var(--maroon);
+      color: #fff;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 0.84rem;
+      cursor: pointer;
+    }
+
+    /* Live Preview Grid: Phone Mockup + Direct Campus Map */
+    .preview-grid {
+      display: grid;
+      grid-template-columns: minmax(300px, 360px) minmax(0, 1fr);
+      gap: 22px;
+      align-items: start;
+      width: 100%;
+    }
+
+    @media (max-width: 1150px) {
+      .preview-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    /* Realistic iPhone Mockup Frame matching Poster */
+    .phone-frame {
+      width: min(100%, 360px);
+      height: 700px;
+      margin: 0 auto;
+      background: #1a1a1a;
+      border-radius: 44px;
+      padding: 11px;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.25), inset 0 0 2px 2px rgba(255, 255, 255, 0.2);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .phone-notch {
+      width: 130px;
+      height: 22px;
+      background: #1a1a1a;
+      border-radius: 0 0 14px 14px;
+      position: absolute;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+    }
+
+    .phone-browser-bar {
+      background: #f1f1f1;
+      border-radius: 32px 32px 0 0;
+      padding: 28px 14px 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #ddd;
+      font-size: 0.72rem;
+      color: #444;
+      font-weight: 600;
+    }
+
+    .phone-url-pill {
+      background: #e3e3e3;
+      padding: 4px 12px;
+      border-radius: 999px;
+      max-width: 210px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .phone-screen {
+      flex: 1;
+      width: 100%;
+      border: none;
+      border-radius: 0 0 32px 32px;
+      background: #fff;
+    }
+
+    /* Direct Campus Map Card */
+    .map-showcase-card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 18px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.07);
+      border: 1px solid #e3ded6;
+    }
+
+    .map-showcase-card img {
+      width: 100%;
+      border-radius: 10px;
+      border: 1px solid #ddd;
+      display: block;
+      margin-top: 12px;
+    }
+
+    @media print {
+      body {
+        background: #fff;
+      }
+      .top-banner, .right-column {
+        display: none !important;
+      }
+      .workspace {
+        display: flex;
+        justify-content: center;
+        margin: 0;
+      }
+      .qr-poster-column {
+        width: 420px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation Banner -->
+  <header class="top-banner">
+    <div class="banner-left">
+      <img src="assets/earist-logo.png?v=2" alt="EARIST Logo" class="banner-logo" />
+      <div class="banner-school">
+        <h1>EARIST</h1>
+        <p>CAVITE CAMPUS</p>
+      </div>
+      <div class="banner-divider"></div>
+      <div class="banner-system">
+        <h2>CAMPUS NAVIGATION SYSTEM</h2>
+        <p>SCAN &bull; SEARCH &bull; NAVIGATE &bull; CONNECT</p>
+      </div>
+    </div>
+    <div class="banner-actions">
+      <button type="button" class="btn-action" id="downloadQrBtn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        Download QR Code (PNG)
+      </button>
+      <button type="button" class="btn-action outline" onclick="window.print()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/>
+        </svg>
+        Print Entrance Sign
+      </button>
+      <a href="map.php" target="_blank" class="btn-action outline">
+        Open Map Page &rarr;
+      </a>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <div class="workspace">
+    <!-- Left Column: QR CODE AT ENTRANCE Sign (Matches User's Image) -->
+    <div class="qr-poster-column">
+      <div class="section-ribbon">QR CODE AT ENTRANCE</div>
+
+      <div class="qr-standee-card" id="standeeCard">
+        <div class="standee-top">
+          <div class="standee-brand">
+            <img src="assets/earist-logo.png?v=2" alt="EARIST Seal" id="sealImg" crossorigin="anonymous" />
+            <div class="standee-brand-text">
+              <h3>EARIST</h3>
+              <span>CAVITE CAMPUS</span>
+            </div>
+          </div>
+
+          <div class="standee-headline">
+            SCAN TO NAVIGATE<br />CAMPUS MAP
+          </div>
+
+          <div class="qr-frame">
+            <canvas id="qrCanvas" width="480" height="480"></canvas>
+          </div>
+        </div>
+
+        <div class="standee-steps">
+          <div class="step-row">
+            <div class="step-icon-circle">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/>
+              </svg>
+            </div>
+            <span class="step-num-badge">1</span>
+            <span class="step-text">Scan the QR code</span>
+          </div>
+
+          <div class="step-row">
+            <div class="step-icon-circle">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/>
+              </svg>
+            </div>
+            <span class="step-num-badge">2</span>
+            <span class="step-text">Open the campus map</span>
+          </div>
+
+          <div class="step-row">
+            <div class="step-icon-circle">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+            </div>
+            <span class="step-num-badge">3</span>
+            <span class="step-text">Search your destination</span>
+          </div>
+
+          <div class="step-row">
+            <div class="step-icon-circle">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="6" cy="19" r="3"/><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"/><circle cx="18" cy="5" r="3"/>
+              </svg>
+            </div>
+            <span class="step-num-badge">4</span>
+            <span class="step-text">Get directions</span>
+          </div>
+        </div>
+
+        <div class="standee-footer">
+          <svg class="globe-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/>
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+          </svg>
+          <div class="footer-url-box">
+            <div class="footer-url-label">OR VISIT OUR WEBSITE</div>
+            <a href="<?= htmlspecialchars($defaultMapUrl) ?>" target="_blank" class="footer-url-pill" id="footerUrlDisplay">
+              <?= htmlspecialchars($defaultMapUrl) ?>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: QR Target Config + Live Phone App Preview + Cropped Map -->
+    <div class="right-column">
+      <div class="config-card">
+        <h3>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+          </svg>
+          QR Code Destination Link (Auto-Detected Wi-Fi IP: <code><?= htmlspecialchars($lanIp) ?></code>)
+        </h3>
+        <p>
+          Connect your phone to the same Wi-Fi network or mobile hotspot as this computer, then scan the QR code on the left to open the EARIST Cavite Campus Map directly on your phone.
+        </p>
+
+        <div class="preset-pills">
+          <button type="button" class="preset-btn active" data-url="<?= htmlspecialchars($defaultMapUrl) ?>">
+            Interactive Mobile Campus Map (Recommended)
+          </button>
+          <button type="button" class="preset-btn" data-url="<?= htmlspecialchars($defaultImgUrl) ?>">
+            Direct Cropped Campus Map Image Only
+          </button>
+          <button type="button" class="preset-btn" data-url="<?= htmlspecialchars($defaultMapUrl . '?view=full') ?>">
+            Fullscreen Campus Map Mode
+          </button>
+        </div>
+
+        <div class="url-input-group">
+          <input type="text" id="qrUrlInput" value="<?= htmlspecialchars($defaultMapUrl) ?>" placeholder="Enter URL for QR Code..." />
+          <button type="button" id="updateQrBtn">Update QR</button>
+        </div>
+      </div>
+
+      <div class="preview-grid">
+        <!-- Live Interactive Mobile Phone Preview -->
+        <div>
+          <div class="phone-frame">
+            <div class="phone-notch"></div>
+            <div class="phone-browser-bar">
+              <span>&#8592;</span>
+              <span class="phone-url-pill" id="phoneUrlBar">earist-cavite-map.com</span>
+              <span>&#8635;</span>
+            </div>
+            <iframe src="map.php" class="phone-screen" id="phoneIframe" title="EARIST Mobile Map Preview"></iframe>
+          </div>
+        </div>
+
+        <!-- Clean Campus Map & Floor Plan Preview Card -->
+        <div class="map-showcase-card">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+            <div>
+              <h3 style="color:var(--maroon); font-size:1rem; font-weight:800;">CAMPUS MAP &amp; FLOOR PLANS</h3>
+              <p style="font-size:0.78rem; color:#666; margin-top:2px;">Switch map views below or interact directly with the phone preview:</p>
+            </div>
+            <select id="planPreviewSelect" style="border:1.5px solid #d4cfc7; background:#faf8f5; color:var(--maroon-dark); padding:8px 12px; border-radius:10px; font-size:0.8rem; font-weight:700; cursor:pointer; outline:none;">
+              <option value="" data-img="assets/campus-map.png">🗺️ Campus Map (Main)</option>
+              <option value="main-1f" data-img="assets/floor-main-1f.jpg">🏢 Main Bldg (1st Floor)</option>
+              <option value="main-3f" data-img="assets/floor-main-3f.jpg">🏢 Main Bldg (3rd Floor)</option>
+              <option value="annex-1f" data-img="assets/floor-annex-1f.jpg">🏢 Annex Bldg (1st Floor)</option>
+              <option value="annex-3f" data-img="assets/floor-annex-3f.jpg">🏢 Annex Bldg (3rd Floor)</option>
+              <option value="evac-master" data-img="assets/evacuation-master-plan.jpg">🚨 All Evacuation Routes</option>
+              <option value="site-plan" data-img="assets/campus-vicinity-plan.jpg">📍 Campus Vicinity Map</option>
+            </select>
+          </div>
+
+          <img src="assets/campus-map.png" alt="EARIST Cavite Campus Map & Floor Plan Preview" id="showcasePreviewImg" />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const qrCanvas = document.getElementById("qrCanvas");
+    const qrUrlInput = document.getElementById("qrUrlInput");
+    const footerUrlDisplay = document.getElementById("footerUrlDisplay");
+    const phoneUrlBar = document.getElementById("phoneUrlBar");
+    const sealImg = document.getElementById("sealImg");
+
+    function drawQRCode(text) {
+      const qr = qrcode(0, "H"); // High error correction (30%) so center logo scans reliably
+      qr.addData(text);
+      qr.make();
+
+      const ctx = qrCanvas.getContext("2d");
+      const size = qrCanvas.width;
+      const moduleCount = qr.getModuleCount();
+      const margin = 2;
+      const totalModules = moduleCount + margin * 2;
+      const cellSize = size / totalModules;
+
+      // White background
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, size, size);
+
+      // Draw QR modules
+      ctx.fillStyle = "#181818";
+      for (let r = 0; r < moduleCount; r++) {
+        for (let c = 0; c < moduleCount; c++) {
+          if (qr.isDark(r, c)) {
+            const x = Math.floor((c + margin) * cellSize);
+            const y = Math.floor((r + margin) * cellSize);
+            const w = Math.ceil((c + margin + 1) * cellSize) - x;
+            const h = Math.ceil((r + margin + 1) * cellSize) - y;
+            ctx.fillRect(x, y, w, h);
+          }
+        }
+      }
+
+      // Draw circular EARIST seal in the center of the QR code (matching poster)
+      const center = size / 2;
+      const logoRadius = size * 0.115;
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(center, center, logoRadius + 6, 0, Math.PI * 2);
+      ctx.fillStyle = "#ffffff";
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(center, center, logoRadius, 0, Math.PI * 2);
+      ctx.closePath();
+      ctx.clip();
+
+      if (sealImg.complete && sealImg.naturalWidth > 0) {
+        ctx.drawImage(
+          sealImg,
+          center - logoRadius,
+          center - logoRadius,
+          logoRadius * 2,
+          logoRadius * 2
+        );
+      } else {
+        ctx.fillStyle = "#631418";
+        ctx.fill();
+      }
+      ctx.restore();
+
+      // Thin maroon ring around the center seal
+      ctx.beginPath();
+      ctx.arc(center, center, logoRadius + 1, 0, Math.PI * 2);
+      ctx.strokeStyle = "#631418";
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+
+      // Update displayed links
+      footerUrlDisplay.textContent = text;
+      footerUrlDisplay.href = text;
+      phoneUrlBar.textContent = text.replace(/^https?:\/\//, "");
+    }
+
+    sealImg.addEventListener("load", () => drawQRCode(qrUrlInput.value.trim()));
+    drawQRCode(qrUrlInput.value.trim());
+
+    document.getElementById("updateQrBtn").addEventListener("click", () => {
+      const val = qrUrlInput.value.trim();
+      if (val) drawQRCode(val);
+    });
+
+    qrUrlInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        const val = qrUrlInput.value.trim();
+        if (val) drawQRCode(val);
+      }
+    });
+
+    const isPublicHost = window.location.hostname && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1" && !window.location.hostname.startsWith("192.168.");
+    const liveBaseDir = window.location.href.split("?")[0].replace(/\/(index\.(php|html))?$/, "");
+    const baseMapUrl = isPublicHost ? `${liveBaseDir}/map.html` : <?= json_encode($defaultMapUrl) ?>;
+    const phoneIframe = document.getElementById("phoneIframe");
+
+    if (isPublicHost) {
+      qrUrlInput.value = baseMapUrl;
+      drawQRCode(baseMapUrl);
+    }
+
+    document.querySelectorAll(".preset-pills .preset-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".preset-pills .preset-btn").forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        qrUrlInput.value = btn.dataset.url;
+        drawQRCode(btn.dataset.url);
+      });
+    });
+
+    const showcasePreviewImg = document.getElementById("showcasePreviewImg");
+    const planPreviewSelect = document.getElementById("planPreviewSelect");
+
+    planPreviewSelect.addEventListener("change", () => {
+      const opt = planPreviewSelect.options[planPreviewSelect.selectedIndex];
+      const plan = planPreviewSelect.value;
+      if (opt && opt.dataset.img) showcasePreviewImg.src = opt.dataset.img;
+      phoneIframe.src = plan ? `map.php?plan=${encodeURIComponent(plan)}` : "map.php";
+    });
+
+    // Download high-resolution QR Code PNG
+    document.getElementById("downloadQrBtn").addEventListener("click", () => {
+      const link = document.createElement("a");
+      link.download = "EARIST-Cavite-Campus-Map-QRCode.png";
+      link.href = qrCanvas.toDataURL("image/png");
+      link.click();
+    });
+  </script>
+</body>
+</html>
+
