@@ -1,0 +1,281 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EARIST Cavite Campus — Scan QR Code</title>
+  <link rel="icon" type="image/png" href="assets/earist-logo.png?v=2" />
+  <script src="assets/qrcode.min.js"></script>
+  <style>
+    :root {
+      --maroon-dark: #4a0e12;
+      --maroon: #631418;
+      --cream: #f5f2eb;
+      --text-dark: #1f1b1c;
+      --text-muted: #645d5e;
+      --border: #e6dfd5;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+
+    *::-webkit-scrollbar {
+      display: none;
+      width: 0;
+      height: 0;
+    }
+
+    html, body {
+      width: 100%;
+      min-height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: var(--cream);
+      color: var(--text-dark);
+    }
+
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .qr-card {
+      width: 100%;
+      max-width: 420px;
+      background: #ffffff;
+      border-radius: 22px;
+      border: 1.5px solid var(--border);
+      box-shadow: 0 18px 42px rgba(74, 14, 18, 0.14);
+      overflow: hidden;
+      text-align: center;
+    }
+
+    .card-header {
+      background: linear-gradient(120deg, var(--maroon-dark) 0%, var(--maroon) 100%);
+      color: #ffffff;
+      padding: 20px 22px 18px;
+    }
+
+    .card-header img {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: #ffffff;
+      padding: 3px;
+      margin-bottom: 10px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    .card-header h1 {
+      font-size: 1.15rem;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+    }
+
+    .card-header p {
+      font-size: 0.82rem;
+      color: rgba(255, 255, 255, 0.88);
+      margin-top: 4px;
+    }
+
+    .card-body {
+      padding: 24px 22px 26px;
+    }
+
+    .scan-label {
+      font-size: 0.9rem;
+      font-weight: 800;
+      color: var(--maroon-dark);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+
+    .qr-frame {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 14px;
+      background: #ffffff;
+      border: 3px solid var(--maroon);
+      border-radius: 18px;
+      box-shadow: 0 8px 24px rgba(99, 20, 24, 0.12);
+    }
+
+    #qrCanvas {
+      width: 260px;
+      height: 260px;
+      display: block;
+    }
+
+    .target-url {
+      margin-top: 14px;
+      font-size: 0.74rem;
+      color: var(--text-muted);
+      background: #f8f6f2;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 8px 10px;
+      word-break: break-all;
+    }
+
+    .actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 11px 14px;
+      border-radius: 11px;
+      font-size: 0.84rem;
+      font-weight: 700;
+      text-decoration: none;
+      cursor: pointer;
+      border: none;
+      transition: transform 0.12s ease, opacity 0.15s ease;
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+    }
+
+    .btn-primary {
+      background: var(--maroon);
+      color: #ffffff;
+      grid-column: 1 / -1;
+    }
+
+    .btn-secondary {
+      background: #f4f1ea;
+      color: var(--maroon-dark);
+      border: 1px solid #ded7cc;
+    }
+
+    @media print {
+      body {
+        background: #ffffff;
+        padding: 0;
+      }
+      .qr-card {
+        box-shadow: none;
+        border: 2px solid var(--maroon);
+        max-width: 460px;
+      }
+      .actions, .target-url {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="qr-card">
+    <header class="card-header">
+      <img src="assets/earist-logo.png" alt="EARIST Logo" />
+      <h1>EARIST Cavite Campus</h1>
+      <p>School Navigation System</p>
+    </header>
+
+    <section class="card-body">
+      <div class="scan-label">Scan QR Code to Open Map</div>
+
+      <div class="qr-frame">
+        <canvas id="qrCanvas" width="420" height="420"></canvas>
+      </div>
+
+      <div class="target-url" id="targetUrlText"></div>
+
+      <div class="actions">
+        <button type="button" class="btn btn-primary" id="downloadBtn">⬇ Download QR Code (PNG)</button>
+        <button type="button" class="btn btn-secondary" onclick="window.print()">🖨 Print QR Code</button>
+        <a href="map.html" class="btn btn-secondary">🗺 Open Map</a>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const qrCanvas = document.getElementById("qrCanvas");
+    const targetUrlText = document.getElementById("targetUrlText");
+
+    const isPublicHost = window.location.hostname &&
+      window.location.hostname !== "localhost" &&
+      window.location.hostname !== "127.0.0.1" &&
+      !window.location.hostname.startsWith("192.168.");
+
+    const liveBaseDir = window.location.href.split("?")[0].replace(/\/(index\.(php|html))?$/, "");
+    const targetMapUrl = isPublicHost
+      ? `${liveBaseDir}/map.html`
+      : "https://subzer0xxx.github.io/earist-map/QRcode/map.html";
+
+    targetUrlText.textContent = targetMapUrl;
+
+    function drawQRCode(url) {
+      const ctx = qrCanvas.getContext("2d");
+      const size = qrCanvas.width;
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, size, size);
+
+      const qr = qrcode(0, "H");
+      qr.addData(url);
+      qr.make();
+
+      const count = qr.getModuleCount();
+      const margin = 18;
+      const cell = (size - margin * 2) / count;
+
+      ctx.fillStyle = "#1f1b1c";
+      for (let r = 0; r < count; r++) {
+        for (let c = 0; c < count; c++) {
+          if (qr.isDark(r, c)) {
+            ctx.fillRect(
+              Math.floor(margin + c * cell),
+              Math.floor(margin + r * cell),
+              Math.ceil(cell),
+              Math.ceil(cell)
+            );
+          }
+        }
+      }
+
+      // Draw circular EARIST seal in the center
+      const logo = new Image();
+      logo.onload = () => {
+        const logoSize = size * 0.22;
+        const cx = size / 2;
+        const cy = size / 2;
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(cx, cy, logoSize / 2 + 6, 0, Math.PI * 2);
+        ctx.fillStyle = "#ffffff";
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(cx, cy, logoSize / 2, 0, Math.PI * 2);
+        ctx.clip();
+        ctx.drawImage(logo, cx - logoSize / 2, cy - logoSize / 2, logoSize, logoSize);
+        ctx.restore();
+      };
+      logo.src = "assets/earist-logo.png";
+    }
+
+    drawQRCode(targetMapUrl);
+
+    document.getElementById("downloadBtn").addEventListener("click", () => {
+      const link = document.createElement("a");
+      link.download = "EARIST-Cavite-Campus-Map-QRCode.png";
+      link.href = qrCanvas.toDataURL("image/png");
+      link.click();
+    });
+  </script>
+</body>
+</html>
